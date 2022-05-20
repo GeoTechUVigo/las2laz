@@ -1,7 +1,7 @@
 from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter import *
-import os
+from pathlib import Path
 import laspy
 
 
@@ -25,15 +25,23 @@ class Uitkinter(Tk):
         # Input dir
         self.label_in_dir = ttk.Label(text="Input dir: ")
         self.button_in_dir = ttk.Button(text='Select', command=self.select_dir_in)
+        self.information_input = ttk.Label(text="", wraplength="100m") # Limit the maximum width
 
         # Output dir
         self.label_out_dir = ttk.Label(text="Output dir: ")
         self.button_out_dir = ttk.Button(text='Select', command=self.select_dir_out)
-            
+        self.information_output = ttk.Label(text="", wraplength="100m") # Limit the maximum width
+
         # Save in the same dir button
         self.label_same_dir = ttk.Label( text="Save in the same dir")
         self.same_dir = BooleanVar()
         self.buttom_same_dir = ttk.Checkbutton(variable=self.same_dir, onvalue=True, offvalue=False, command=self.same_dir_func)
+
+        # Analyse subdirs button
+        self.label_subdirs = ttk.Label( text="Analyse files in subdirs")
+        self.analyse_subdirs = BooleanVar()
+        self.buttom_analyse_subdirs = ttk.Checkbutton(variable=self.analyse_subdirs, onvalue=True, offvalue=False)
+
 
         # Delete original files button
         self.label_delete_files = ttk.Label( text="Delete original files")
@@ -45,7 +53,7 @@ class Uitkinter(Tk):
         
         # Cancel process 
         self.cancel = BooleanVar()
-        self.cancel_buttom = ttk.Button(text="Cancel", command=self.cancel_process, state='disable')
+        self.cancel_buttom = ttk.Button(text="Cancel", state='disable', command=self.cancel_process)
 
         # Information
         self.information = ttk.Label(text="")
@@ -56,12 +64,16 @@ class Uitkinter(Tk):
         # Define the geometry of the content in the GUI
         self.label_in_dir.grid(column=1, row=1, sticky="nsew")
         self.button_in_dir.grid(column=2, row=1, sticky="nsew")
+        self.information_input.grid(column=3, row=1, sticky="nsew")
         self.label_out_dir.grid(column=1, row=2, sticky="nsew")
         self.button_out_dir.grid(column=2, row=2, sticky="nsew")
+        self.information_output.grid(column=3, row=2, sticky="nsew")
         self.label_same_dir.grid(column=1, row=3, sticky="nsew")
         self.buttom_same_dir.grid(column=2, row=3, sticky="nsew")
-        self.label_delete_files.grid(column=1, row=4, sticky="nsew")
-        self.butoom_delete_files.grid(column=2, row=4, sticky="nsew")
+        self.label_subdirs.grid(column=1, row=4, sticky="nsew")
+        self.buttom_analyse_subdirs.grid(column=2, row=4, sticky="nsew")
+        self.label_delete_files.grid(column=1, row=5, sticky="nsew")
+        self.butoom_delete_files.grid(column=2, row=5, sticky="nsew")
         self.start_buttom.grid(column=3, row=7, sticky="nsew")
         self.cancel_buttom.grid(column=4, row=7, sticky="nsew")
         self.progressbar.grid(column=1, row=7, sticky="nsew")
@@ -74,17 +86,21 @@ class Uitkinter(Tk):
 
     def select_dir_in(self):
         self.dir_in = fd.askdirectory(title='Select directory', initialdir='./', mustexist=True)
+        self.information_input.configure(text=self.dir_in[-60:])
 
 
     def select_dir_out(self):
         self.dir_out = fd.askdirectory(title='Select directory', initialdir='./', mustexist=True)
+        self.information_output.configure(text=self.dir_out)
 
 
     def same_dir_func(self):
         if self.same_dir.get() == True:
             self.button_out_dir["state"] = "disable"
+            self.information_output.configure(text=self.dir_in)
         else:
             self.button_out_dir["state"] = "normal"
+            self.information_output.configure(text=self.dir_out)
 
 
     def start_process(self):
@@ -94,11 +110,11 @@ class Uitkinter(Tk):
             self.dir_out = self.dir_in
 
         # Check inputs
-        if not os.path.isdir(self.dir_in):
+        if not Path(self.dir_in).is_dir():
             self.information.configure(text="Incorrect dir in")
 
 
-        elif not os.path.isdir(self.dir_out):
+        elif not Path(self.dir_out).is_dir():
             self.information.configure(text="Incorrect dir out")
 
         # Start process
@@ -108,7 +124,7 @@ class Uitkinter(Tk):
             self.cancel_buttom.configure(state="normal")
             self.information.configure(text="Working")
             self.update()
-            self.las2laz(self.dir_in, self.dir_out, self.delete_files.get())
+            self.las2laz()
 
 
     def cancel_process(self):
@@ -118,67 +134,64 @@ class Uitkinter(Tk):
         self.information.configure(text="Canceled")
     
 
-    def las2laz(self, dir_in, dir_out, delete_files):
+    def las2laz(self):
         
-        dir_in = self.dir_in
-        dir_out = self.dir_out
+        dir_in = Path(self.dir_in)
+        dir_out = Path(self.dir_out)
         delete_files = self.delete_files.get()
 
         # Extension in and out
-        extension_in = '.las'
-        extension_out = '.laz'
+        suffix_in = '.las'
+        suffix_out = '.laz'
 
-        # All dirs in dir_in
-        dirfiles = os.listdir(dir_in)
-        fullpaths = map(lambda name: os.path.join(dir_in, name), dirfiles)
-        dirs = []
-        for file in fullpaths:
-            if os.path.isdir(file): dirs.append(file)
+        # List with the subdirs, the LAS files in the principal dir and the output file names. Create subdir in dir_out
+        # fullpaths = map(lambda name: os.path.join(dir_in, name), dirfiles)
+        subdirs = list()
+        las_files = list()
+        laz_files = list()
+        for file in dir_in.iterdir():
+            if file.is_dir(): 
+                subdirs.append(file.name)
 
-        # Add dir_in to the dirs list to analyse the files in it
-        dirs.append(dir_in) 
+            elif file.suffix == suffix_in: 
+                las_files.append(file)
+                laz_files.append(dir_out.joinpath(file.stem + suffix_out)) # Change suffix
         
-        # Calculate number of files
-        las_files = []
-        for dir in dirs:
-            
-            files = os.listdir(dir)
-            # LAS files
-            for file in files:
-                if file.endswith(extension_in): las_files.append(os.path.join(dir, file))
+        # Add to las_files_in and out the las files in the subdirs 
+        if self.analyse_subdirs.get():
+
+            for subdir_name in subdirs:
+
+                # Create this folder in dir_out
+                subdir_path = dir_out.joinpath(subdir_name)
+                subdir_path.mkdir(exist_ok=True)
+
+                # Files in this subdir
+                subdir = dir_in.joinpath(subdir_name)
+                for file in subdir.iterdir():
+                    if file.suffix == suffix_in:
+                        las_files.append(file)
+                        laz_files.append(dir_out.joinpath(subdir_name, file.stem + suffix_out))
 
         # Uptade maximum of the progress bar
         self.progressbar.configure(maximum=len(las_files))
+        self.progressbar.configure(value=0)
         self.update()
 
         # Read and write all the files
-        for file_in in las_files:
-            
+        for file_in, file_out in zip(las_files, laz_files):
+
             # Check cancel buttom
-            if self.cancel_press: self.cancel_press=False ; return
+            if self.cancel_press: self.cancel_press = False; return
 
             # Read file
             point_cloud = laspy.read(file_in)
 
-            # Folder and name
-            folder_in = file_in.split("/")
-            name_in = folder_in[-1]
-            folder_in = "/".join(folder_in[:-1])
-
-            # Output folder
-            folder_out = folder_in.replace(dir_in, dir_out)
-            # Create folder if it does not exist
-            if not os.path.isdir(folder_out): os.mkdir(folder_out)
-
-            # Change extension
-            name_out = name_in.replace(extension_in, extension_out)
-
             # Write file
-            file_out = os.path.join(folder_out, name_out)
             point_cloud.write(file_out)
 
             # Delete file
-            if delete_files: os.remove(file_in)
+            if delete_files: file_in.unlink()
             
             # Update bar
             self.progressbar.step(1)

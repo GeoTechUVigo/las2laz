@@ -1,6 +1,5 @@
 from ui_functions import Uitkinter
 
-
 ui = Uitkinter()
 ui.mainloop()
 
