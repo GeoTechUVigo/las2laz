@@ -1,4 +1,4 @@
-LAS2LAZ
+# LAS2LAZ
 
 Executable for Linux and Windows to generate LAZ from LAS files.
 The program compresses all the LAS files in the input folder and its subfolders.
