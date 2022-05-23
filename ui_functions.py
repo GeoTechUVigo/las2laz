@@ -74,7 +74,7 @@ class Uitkinter(Tk):
         self.buttom_analyse_subdirs.grid(column=2, row=4, sticky="nsew")
         self.label_delete_files.grid(column=1, row=5, sticky="nsew")
         self.butoom_delete_files.grid(column=2, row=5, sticky="nsew")
-        self.start_buttom.grid(column=3, row=7, sticky="nsew")
+        self.start_buttom.grid(column=4, row=6, sticky="nsew")
         self.cancel_buttom.grid(column=4, row=7, sticky="nsew")
         self.progressbar.grid(column=1, row=7, sticky="nsew")
         self.information.grid(column=1, row=8, sticky="nsew")
@@ -144,15 +144,17 @@ class Uitkinter(Tk):
         suffix_in = '.las'
         suffix_out = '.laz'
 
-        # List with the subdirs, the LAS files in the principal dir and the output file names. Create subdir in dir_out
+        # List with the subdirs, the LAS files in the principal dir and the output file paths. Create subdir in dir_out
         # fullpaths = map(lambda name: os.path.join(dir_in, name), dirfiles)
         subdirs = list()
         las_files = list()
         laz_files = list()
         for file in dir_in.iterdir():
+            # Dirs
             if file.is_dir(): 
                 subdirs.append(file.name)
 
+            # LAS files
             elif file.suffix == suffix_in: 
                 las_files.append(file)
                 laz_files.append(dir_out.joinpath(file.stem + suffix_out)) # Change suffix
@@ -161,17 +163,21 @@ class Uitkinter(Tk):
         if self.analyse_subdirs.get():
 
             for subdir_name in subdirs:
+                
+                # Path of this subdir in dir_in
+                subdir_in = dir_in.joinpath(subdir_name)
 
                 # Create this folder in dir_out
-                subdir_path = dir_out.joinpath(subdir_name)
-                subdir_path.mkdir(exist_ok=True)
+                subdir_out = dir_out.joinpath(subdir_name)
+                subdir_out.mkdir(exist_ok=True)
+
 
                 # Files in this subdir
-                subdir = dir_in.joinpath(subdir_name)
-                for file in subdir.iterdir():
+                for file in subdir_in.iterdir():
+                    # LAS files
                     if file.suffix == suffix_in:
                         las_files.append(file)
-                        laz_files.append(dir_out.joinpath(subdir_name, file.stem + suffix_out))
+                        laz_files.append(subdir_out.joinpath(file.stem + suffix_out))
 
         # Uptade maximum of the progress bar
         self.progressbar.configure(maximum=len(las_files))
@@ -194,7 +200,7 @@ class Uitkinter(Tk):
             if delete_files: file_in.unlink()
             
             # Update bar
-            self.progressbar.step(1)
+            self.progressbar['value'] +=1
             self.update()
         
         # Finish message
