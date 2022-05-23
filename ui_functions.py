@@ -192,7 +192,7 @@ class Uitkinter(Tk):
 
             # Read file
             point_cloud = laspy.read(file_in)
-
+            
             # Write file
             point_cloud.write(file_out)
 
