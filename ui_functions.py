@@ -121,6 +121,11 @@ class Uitkinter(Tk):
         else:
             # Updating start and cancel buttoms
             self.start_buttom.configure(state="disable")
+            self.button_in_dir.configure(state="disable")
+            self.button_out_dir.configure(state="disable")
+            self.buttom_same_dir.configure(state="disable")
+            self.buttom_analyse_subdirs.configure(state="disable")
+            self.butoom_delete_files.configure(state="disable")
             self.cancel_buttom.configure(state="normal")
             self.information.configure(text="Working")
             self.update()
@@ -131,6 +136,11 @@ class Uitkinter(Tk):
         self.cancel_press = True
         self.cancel_buttom.configure(state="disable")
         self.start_buttom.configure(state="normal")
+        self.button_in_dir.configure(state="normal")
+        self.button_out_dir.configure(state="normal")
+        self.buttom_same_dir.configure(state="normal")
+        self.buttom_analyse_subdirs.configure(state="normal")
+        self.butoom_delete_files.configure(state="normal")
         self.information.configure(text="Canceled")
     
 
@@ -157,7 +167,7 @@ class Uitkinter(Tk):
             # LAS files
             elif file.suffix == suffix_in: 
                 las_files.append(file)
-                laz_files.append(dir_out.joinpath(file.stem + suffix_out)) # Change suffix
+                laz_files.append(dir_out.joinpath(file.with_suffix(suffix_out).name)) # Change suffix
         
         # Add to las_files_in and out the las files in the subdirs 
         if self.analyse_subdirs.get():
@@ -171,13 +181,12 @@ class Uitkinter(Tk):
                 subdir_out = dir_out.joinpath(subdir_name)
                 subdir_out.mkdir(exist_ok=True)
 
-
                 # Files in this subdir
                 for file in subdir_in.iterdir():
                     # LAS files
                     if file.suffix == suffix_in:
                         las_files.append(file)
-                        laz_files.append(subdir_out.joinpath(file.stem + suffix_out))
+                        laz_files.append(subdir_out.joinpath(file.with_suffix(suffix_out).name))
 
         # Uptade maximum of the progress bar
         self.progressbar.configure(maximum=len(las_files))
