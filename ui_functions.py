@@ -19,6 +19,8 @@ class Uitkinter(Tk):
         self.dir_out = ""
         self.cancel_press = False
 
+        self.max_info = 60
+
         # Create window
         self.resizable(False, False)
 
@@ -86,21 +88,21 @@ class Uitkinter(Tk):
 
     def select_dir_in(self):
         self.dir_in = fd.askdirectory(title='Select directory', initialdir='./', mustexist=True)
-        self.information_input.configure(text=self.dir_in[-60:])
+        self.information_input.configure(text=self.dir_in[-self.max_info:])
 
 
     def select_dir_out(self):
         self.dir_out = fd.askdirectory(title='Select directory', initialdir='./', mustexist=True)
-        self.information_output.configure(text=self.dir_out)
+        self.information_output.configure(text=self.dir_out[-self.max_info:])
 
 
     def same_dir_func(self):
         if self.same_dir.get() == True:
             self.button_out_dir["state"] = "disable"
-            self.information_output.configure(text=self.dir_in)
+            self.information_output.configure(text=self.dir_in[-self.max_info:])
         else:
             self.button_out_dir["state"] = "normal"
-            self.information_output.configure(text=self.dir_out)
+            self.information_output.configure(text=self.dir_out[-self.max_info:])
 
 
     def start_process(self):
