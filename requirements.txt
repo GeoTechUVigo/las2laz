@@ -1,7 +1,8 @@
 altgraph==0.17.2
 certifi==2021.10.8
-laspy==2.1.2
+laspy==2.3.0
 laszip==0.1.0
+lazrs==0.4.4
 numpy==1.22.3
 pyinstaller==5.0.1
 pyinstaller-hooks-contrib==2022.4
