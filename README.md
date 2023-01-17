@@ -24,3 +24,5 @@ You should have received a copy of the GNU General Public License along with thi
 
 In the executable folder there are 2 executables: one for Linux and the other for Windows.
 Download the appropriate one for your operating system and execute it to compress your LAS in LAZ by simply selecting the folder.
+
+![image](https://github.com/GeoTechUVigo/las2laz/blob/master/images/las2laz_image.png)
